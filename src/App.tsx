@@ -580,31 +580,54 @@ function TopicDetail({ topicId, moduleId, onBack }: { topicId: string, moduleId:
   };
 
   const handleStudyAid = async (note: Note, type: 'summary' | 'flashcards' | 'mindmap' | 'exampaper' | 'slides') => {
+    if (!note.content.trim()) {
+      alert("This artifact has no essence to transform.");
+      return;
+    }
     setIsProcessing(true);
     try {
       const data = await generateStudyAid(note, type);
-      setSelectedAid({ type, data, noteTitle: note.title });
+      if (data) {
+        setSelectedAid({ type, data, noteTitle: note.title });
+      } else {
+        alert("The Ethereal Engine failed to manifest this request. Try again shortly.");
+      }
     } catch (error) {
       console.error(error);
+      alert("A conceptual misalignment occurred during transformation.");
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleCartoonify = async (note: Note) => {
+    if (!note.content.trim()) {
+      alert("The artifact lacks sufficient essence for visualization.");
+      return;
+    }
+
     if (note.cartoonDescription) {
       setSelectedNoteForCartoon(note);
       return;
     }
     
     setIsProcessing(true);
-    const cartoon = await cartoonifyContent(note);
-    db.notes.update(note.id, { cartoonDescription: cartoon.description });
-    
-    const updatedNote = { ...note, cartoonDescription: cartoon.description };
-    setNotes(notes.map(n => n.id === note.id ? updatedNote : n));
-    setSelectedNoteForCartoon(updatedNote);
-    setIsProcessing(false);
+    try {
+      const cartoon = await cartoonifyContent(note);
+      if (cartoon && cartoon.description) {
+        db.notes.update(note.id, { cartoonDescription: cartoon.description });
+        const updatedNote = { ...note, cartoonDescription: cartoon.description };
+        setNotes(notes.map(n => n.id === note.id ? updatedNote : n));
+        setSelectedNoteForCartoon(updatedNote);
+      } else {
+        alert("The visual abstract could not be rendered.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Vision failed to materialize.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (!topic) return null;

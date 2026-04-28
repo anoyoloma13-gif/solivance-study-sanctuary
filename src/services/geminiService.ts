@@ -26,7 +26,9 @@ export async function generatePracticeQuestions(notes: Note[]): Promise<Practice
       }
     });
 
-    return JSON.parse(response.text || '[]');
+    const resultText = response.text;
+    if (!resultText) throw new Error("No response from AI");
+    return JSON.parse(resultText);
   } catch (error) {
     console.error("Error generating questions:", error);
     return [];
@@ -64,7 +66,9 @@ export async function cartoonifyContent(note: Note): Promise<{ description: stri
       }
     });
 
-    return JSON.parse(response.text || '{}');
+    const resultText = response.text;
+    if (!resultText) throw new Error("No response from AI");
+    return JSON.parse(resultText);
   } catch (error) {
     console.error("Error cartoonifying content:", error);
     return { description: "The archives remain silent on this matter.", cartoonPrompt: "" };
@@ -94,7 +98,9 @@ export async function searchNotes(query: string, notes: Note[]): Promise<Note[]>
       }
     });
 
-    const relevantIds = JSON.parse(response.text || '[]');
+    const resultText = response.text;
+    if (!resultText) return [];
+    const relevantIds = JSON.parse(resultText || '[]');
     return notes.filter(n => relevantIds.includes(n.id));
   } catch (error) {
     console.error("Error searching notes:", error);
@@ -128,10 +134,13 @@ export async function generateStudyAid(note: Note, type: 'summary' | 'flashcards
       config
     });
 
+    const resultText = response.text;
+    if (!resultText) return null;
+
     if (type === 'summary' || type === 'exampaper') {
-      return response.text;
+      return resultText;
     }
-    return JSON.parse(response.text || '{}');
+    return JSON.parse(resultText);
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
     return null;
