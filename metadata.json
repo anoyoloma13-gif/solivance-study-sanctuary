@@ -1,0 +1,14 @@
+{
+  "name": "SOLIVANCE",
+  "description": "An ethereal study sanctuary for IT students. Organize modules, search notes with AI, and practice coding in a boho-inspired environment.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI-powered search",
+    "Study-to-cartoon conversion",
+    "Practical Coding Lab",
+    "Multimedia Study Notes"
+  ]
+}
