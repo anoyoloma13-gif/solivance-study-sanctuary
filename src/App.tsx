@@ -42,7 +42,7 @@ import {
 import { Module, Topic, Note, AppState, PracticeQuestion } from './types';
 import { db } from './services/dbService';
 import { cn } from './lib/utils';
-import { searchNotes, generatePracticeQuestions, cartoonifyContent, generateStudyAid } from './services/geminiService';
+import { searchNotes, generatePracticeQuestions, cartoonifyContent, generateStudyAid, explainCode } from './services/geminiService';
 import Markdown from 'react-markdown';
 
 export default function App() {
@@ -699,7 +699,7 @@ function TopicDetail({ topicId, moduleId, onBack }: { topicId: string, moduleId:
               <div className="space-y-8">
                 {selectedAid.type === 'summary' && (
                   <div className="prose prose-lg max-w-none text-earth font-medium leading-loose bg-white/50 p-10 rounded-[40px] border border-sand">
-                    {selectedAid.data}
+                    <Markdown>{selectedAid.data}</Markdown>
                   </div>
                 )}
 
@@ -1286,6 +1286,23 @@ function PracticalLab({ onBack }: { onBack: () => void }) {
     ctx.moveTo(x, y);
   };
 
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+
+  const handleExplain = async () => {
+    setIsExplaining(true);
+    setExplanation(null);
+    try {
+      const result = await explainCode(code);
+      setExplanation(result);
+    } catch (error) {
+       console.error(error);
+       setExplanation("The conceptual link was severed during analysis.");
+    } finally {
+      setIsExplaining(false);
+    }
+  };
+
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -1295,7 +1312,20 @@ function PracticalLab({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 relative">
+      <AnimatePresence>
+        {isExplaining && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-white/20 backdrop-blur-sm">
+             <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-sand flex flex-col items-center gap-6">
+                <div className="p-5 bg-terracotta/10 text-terracotta rounded-full animate-spin">
+                  <Wind size={40} />
+                </div>
+                <p className="font-black text-earth uppercase italic tracking-tighter">Weaving Conceptual Insights...</p>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button onClick={onBack} className="p-4 bg-white/80 rounded-2xl shadow-sm border border-sand group transition-all hover:bg-white">
@@ -1353,6 +1383,14 @@ function PracticalLab({ onBack }: { onBack: () => void }) {
           </div>
           
           <div className="flex items-center gap-6 px-6 py-2 border-l border-sand">
+             {tool === 'code' && (
+               <button 
+                 onClick={handleExplain}
+                 className="flex items-center gap-2 px-5 py-2 bg-terracotta/10 text-terracotta rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-terracotta hover:text-white transition-all mr-4"
+               >
+                 <Sparkles size={14} /> Explain Logic
+               </button>
+             )}
              <div className="flex flex-col items-end">
                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-terracotta">CPU Resonance</span>
                <span className="text-xs font-bold text-earth">82% Operational</span>
@@ -1376,6 +1414,21 @@ function PracticalLab({ onBack }: { onBack: () => void }) {
                 spellCheck={false}
                 className="w-full h-full bg-transparent outline-none resize-none text-earth selection:bg-terracotta/20 custom-scrollbar"
               />
+              {explanation && (
+                <motion.div 
+                  initial={{ y: 50, opacity: 0 }} 
+                  animate={{ y: 0, opacity: 1 }} 
+                  className="absolute bottom-0 left-0 right-0 max-h-[40%] overflow-y-auto bg-white border-t border-sand p-10 mt-4 rounded-t-[40px] shadow-2xl z-20"
+                >
+                   <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-xl font-black text-earth italic tracking-tighter uppercase">AI Resonance Analysis</h4>
+                      <button onClick={() => setExplanation(null)} className="p-2 hover:bg-sand/10 rounded-full transition-colors"><X size={20} /></button>
+                   </div>
+                   <div className="prose prose-sm max-w-none text-clay font-medium italic leading-relaxed">
+                      <Markdown>{explanation}</Markdown>
+                   </div>
+                </motion.div>
+              )}
             </div>
           ) : (
             <div className="w-full h-full bg-white cursor-crosshair touch-none overflow-hidden">

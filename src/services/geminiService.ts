@@ -3,6 +3,14 @@ import { Note, PracticeQuestion } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
+const isAIConfigured = () => {
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY is not defined in the environment. AI tools will fail if not provided via platform.");
+    return false;
+  }
+  return true;
+};
+
 export async function generatePracticeQuestions(notes: Note[]): Promise<PracticeQuestion[]> {
   const content = notes.map(n => n.content).join("\n\n");
   const prompt = `
@@ -18,6 +26,7 @@ export async function generatePracticeQuestions(notes: Note[]): Promise<Practice
   `;
 
   try {
+    if (!isAIConfigured()) throw new Error("Sanctuary Engine Disconnected: API Key Missing.");
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -58,6 +67,7 @@ export async function cartoonifyContent(note: Note): Promise<{ description: stri
   `;
 
   try {
+    if (!isAIConfigured()) throw new Error("Sanctuary Engine Disconnected: API Key Missing.");
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -90,6 +100,7 @@ export async function searchNotes(query: string, notes: Note[]): Promise<Note[]>
   `;
 
   try {
+    if (!isAIConfigured()) throw new Error("Sanctuary Engine Disconnected: API Key Missing.");
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -117,16 +128,17 @@ export async function generateStudyAid(note: Note, type: 'summary' | 'flashcards
     Notes: ${note.content}
     
     Structural Requirements:
-    - summary: A "Harmonized Overview" (poetic but technically rigorous plain text).
+    - summary: A "Harmonized Overview". Use Markdown for structure: use headings (###) for main sections, bullet points for key concepts, and bold text for critical terms. Ensure a logical, tiered flow from foundational concepts to advanced implications.
     - flashcards: "Knowledge Sparks" (JSON array: [{"question": "...", "answer": "..."}]).
     - mindmap: "Conceptual Constellation" (JSON: {"name": "Core", "children": [...]}).
-    - exampaper: A "Scholarly Trial" with sections (Markdown).
+    - exampaper: A "Scholarly Trial". Use Markdown with clear section headers (## Section X), numbered questions, and estimated time limits for each section.
     - slides: A "Visual Narrative" (JSON array: [{"title": "...", "bulletPoints": ["...", "..."]}]).
     
-    Return the response in the requested format (JSON if specified, else plain text/markdown).
+    Return the response in the requested format (JSON if specified, else plain text/markdown). Ensure the output is highly readable, aesthetically organized, and technically structured.
   `;
 
   try {
+    if (!isAIConfigured()) throw new Error("Sanctuary Engine Disconnected: API Key Missing.");
     const config = (type === 'summary' || type === 'exampaper') ? {} : { responseMimeType: "application/json" };
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -144,5 +156,39 @@ export async function generateStudyAid(note: Note, type: 'summary' | 'flashcards
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
     return null;
+  }
+}
+
+export async function explainCode(code: string): Promise<string> {
+  if (!code.trim()) return "The silence of the void contains no logic to explain.";
+  
+  const prompt = `
+    Analyze and explain this IT artifact (code). 
+    Provide a "Resonance Analysis" that is technically precise, structured, and clearly formatted.
+    
+    Structure the response as follows:
+    1. ### Objective: The primary purpose of this artifact.
+    2. ### Logic Flow: A step-by-step technical breakdown of the operations.
+    3. ### Architectural Significance: Why this matters in the broader system.
+    4. ### Optimization Paths: Potential improvements or considerations.
+    
+    Code:
+    ${code}
+    
+    Use Markdown (headings, lists, bold text) to ensure the explanation is easy to navigate and professional.
+  `;
+
+  try {
+    if (!isAIConfigured()) throw new Error("Sanctuary Engine Disconnected: API Key Missing.");
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt
+    });
+
+    return response.text || "The archives are hazy. I cannot decipher this logic.";
+  } catch (error) {
+    console.error("Error explaining code:", error);
+    return "The conceptual link was severed during analysis.";
   }
 }
